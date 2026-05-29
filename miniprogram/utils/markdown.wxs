@@ -1,63 +1,142 @@
-// utils/markdown.wxs - 简单的 Markdown 转 HTML
-// 用于 WXS 中，因为 WXS 不支持 ES6
+// utils/markdown.wxs — Markdown 转 HTML (WXS 兼容版)
+// 注意: WXS 不支持正则字面量，用 getRegExp()
 
 // 主转换函数
 function parseMarkdown(text) {
   if (!text) return '';
   
-  // 转义 HTML
-  var html = text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  // 转义 HTML 特殊字符
+  var html = replaceAll(text, '&', '&amp;');
+  html = replaceAll(html, '<', '&lt;');
+  html = replaceAll(html, '>', '&gt;');
   
-  // 代码块（先处理，避免被后续规则影响）
-  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, function(match, lang, code) {
-    return '<pre style="background:#f5f5f5;padding:16rpx;border-radius:8rpx;overflow-x:auto;font-size:24rpx;line-height:1.5;"><code>' + code.replace(/\n/g, '<br/>') + '</code></pre>';
-  });
+  // 代码块（先处理）
+  html = handleCodeBlocks(html);
   
   // 行内代码
-  html = html.replace(/`([^`]+)`/g, '<code style="background:#f5f5f5;padding:2rpx 8rpx;border-radius:4rpx;font-size:24rpx;">$1</code>');
-  
-  // 标题
-  html = html.replace(/^### (.+)$/gm, '<h3 style="font-size:32rpx;font-weight:600;margin:16rpx 0 8rpx;">$1</h3>');
-  html = html.replace(/^## (.+)$/gm, '<h2 style="font-size:34rpx;font-weight:600;margin:20rpx 0 12rpx;">$1</h2>');
-  html = html.replace(/^# (.+)$/gm, '<h1 style="font-size:36rpx;font-weight:700;margin:24rpx 0 16rpx;">$1</h1>');
-  
-  // 粗体和斜体
-  html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
-  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-  
-  // 无序列表
-  html = html.replace(/^- (.+)$/gm, '<li style="margin:4rpx 0;padding-left:20rpx;">$1</li>');
-  html = html.replace(/(<li.*<\/li>\n?)+/g, '<ul style="padding-left:30rpx;margin:8rpx 0;">$&</ul>');
-  
-  // 有序列表
-  html = html.replace(/^\d+\. (.+)$/gm, '<li style="margin:4rpx 0;">$1</li>');
-  
-  // 水平线
-  html = html.replace(/^---$/gm, '<hr style="border:none;border-top:2rpx solid #eee;margin:20rpx 0;">');
-  
-  // 引用
-  html = html.replace(/^> (.+)$/gm, '<blockquote style="border-left:4rpx solid #7B3FAF;padding-left:20rpx;margin:12rpx 0;color:#666;font-size:26rpx;">$1</blockquote>');
-  
-  // 表格
-  html = html.replace(/\|(.+)\|/g, function(match) {
-    var cells = match.split('|').filter(function(c) { return c.trim(); });
-    var rowHtml = '<tr>';
-    for (var i = 0; i < cells.length; i++) {
-      rowHtml += '<td style="border:1rpx solid #ddd;padding:8rpx 12rpx;font-size:24rpx;">' + cells[i].trim() + '</td>';
-    }
-    rowHtml += '</tr>';
-    return rowHtml;
+  html = replaceRegex(html, getRegExp('`([^`]+)`', 'g'), function(match){
+    return '<code style="background:#f5f5f5;padding:2rpx 8rpx;border-radius:4rpx;font-size:24rpx;">' + match.substring(1, match.length - 1) + '</code>';
   });
   
-  // 换行
-  html = html.replace(/\n{2,}/g, '<br/><br/>');
-  html = html.replace(/\n/g, '<br/>');
+  // 标题
+  html = replaceLineStarting(html, '### ', function(line){
+    return '<h3 style="font-size:32rpx;font-weight:600;margin:16rpx 0 8rpx;">' + line.substring(4) + '</h3>';
+  });
+  html = replaceLineStarting(html, '## ', function(line){
+    return '<h2 style="font-size:34rpx;font-weight:600;margin:20rpx 0 12rpx;">' + line.substring(3) + '</h2>';
+  });
+  html = replaceLineStarting(html, '# ', function(line){
+    return '<h1 style="font-size:36rpx;font-weight:700;margin:24rpx 0 16rpx;">' + line.substring(2) + '</h1>';
+  });
+  
+  // 粗体和斜体
+  html = replaceRegex(html, getRegExp('\\*\\*\\*(.+?)\\*\\*\\*', 'g'), '<strong><em>$1</em></strong>');
+  html = replaceRegex(html, getRegExp('\\*\\*(.+?)\\*\\*', 'g'), '<strong>$1</strong>');
+  html = replaceRegex(html, getRegExp('\\*(.+?)\\*', 'g'), '<em>$1</em>');
+  
+  // 有序列表
+  html = replaceRegex(html, getRegExp('^(\\d+\\.\\s+)(.+)', 'gm'), '<li style="margin:4rpx 0;">$2</li>');
+  
+  // 无序列表
+  html = replaceRegex(html, getRegExp('^[-\\*]\\s+(.+)', 'gm'), '<li style="margin:4rpx 0;">$1</li>');
+  
+  // 链接
+  html = replaceRegex(html, getRegExp('\\[(.+?)\\]\\((.+?)\\)', 'g'), '<a href="$2" style="color:#7B3FAF;">$1</a>');
+  
+  // 段落
+  html = html.split('\n\n').map(function(p){
+    var t = p.trim();
+    if (!t) return '';
+    // 已经是 HTML 标签的不包裹
+    if (t.indexOf('<') === 0) return t;
+    return '<p style="margin:8rpx 0;line-height:1.6;font-size:28rpx;color:#333;">' + t + '</p>';
+  }).join('\n');
   
   return html;
+}
+
+// 工具函数：替换所有匹配
+function replaceAll(str, from, to) {
+  var result = '';
+  var parts = str.split(from);
+  for (var i = 0; i < parts.length; i++) {
+    result += parts[i];
+    if (i < parts.length - 1) result += to;
+  }
+  return result;
+}
+
+// 工具函数：使用 getRegExp
+function replaceRegex(str, regex, replacement) {
+  if (typeof replacement === 'function') {
+    var result = '';
+    var lastIndex = 0;
+    var match = regex.exec(str);
+    while (match !== null) {
+      result += str.substring(lastIndex, match.index);
+      result += replacement(match[0]);
+      lastIndex = match.index + match[0].length;
+      match = regex.exec(str);
+    }
+    result += str.substring(lastIndex);
+    return result;
+  }
+  // 字符串替换（$1 不支持，简化处理）
+  var result = '';
+  var lastIndex = 0;
+  var match = regex.exec(str);
+  while (match !== null) {
+    result += str.substring(lastIndex, match.index);
+    result += replacement;
+    lastIndex = match.index + match[0].length;
+    match = regex.exec(str);
+  }
+  result += str.substring(lastIndex);
+  return result;
+}
+
+// 处理代码块
+function handleCodeBlocks(str) {
+  var lines = str.split('\n');
+  var result = [];
+  var inCodeBlock = false;
+  var codeContent = [];
+  var codeLang = '';
+  
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    if (line.indexOf('```') === 0) {
+      if (inCodeBlock) {
+        result.push('<pre style="background:#f5f5f5;padding:16rpx;border-radius:8rpx;overflow-x:auto;font-size:24rpx;line-height:1.5;"><code>' + codeContent.join('') + '</code></pre>');
+        codeContent = [];
+        inCodeBlock = false;
+      } else {
+        inCodeBlock = true;
+        codeLang = line.substring(3).trim();
+      }
+    } else if (inCodeBlock) {
+      codeContent.push(line + '<br/>');
+    } else {
+      result.push(line);
+    }
+  }
+  
+  if (inCodeBlock) {
+    result.push('<pre style="background:#f5f5f5;padding:16rpx;border-radius:8rpx;overflow-x:auto;font-size:24rpx;"><code>' + codeContent.join('') + '</code></pre>');
+  }
+  
+  return result.join('\n');
+}
+
+// 处理行首匹配
+function replaceLineStarting(str, prefix, handler) {
+  var lines = str.split('\n');
+  for (var i = 0; i < lines.length; i++) {
+    if (lines[i].indexOf(prefix) === 0) {
+      lines[i] = handler(lines[i]);
+    }
+  }
+  return lines.join('\n');
 }
 
 module.exports = {
