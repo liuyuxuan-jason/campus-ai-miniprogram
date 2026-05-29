@@ -1,0 +1,104 @@
+<!-- pages/chat/chat.wxml - 核心对话页面 -->
+<wxs module="md" src="../../utils/markdown.wxs"></wxs>
+<view class="page-chat">
+  <!-- 顶部导航栏（自定义） -->
+  <view class="chat-header" style="border-bottom: 2rpx solid #f0f0f0;">
+    <view class="header-left" catchtap="showModePicker">
+      <text class="mode-icon">{{modeInfo.icon || '🤖'}}</text>
+      <view class="mode-info">
+        <text class="mode-name">{{modeInfo.mainName || 'AI 助手'}}</text>
+        <text class="mode-sub">{{modeInfo.name || ''}}</text>
+      </view>
+      <text class="arrow-down">▾</text>
+    </view>
+    <view class="header-right">
+      <text class="btn-new" catchtap="onNewChat">➕</text>
+    </view>
+  </view>
+
+  <!-- 模式选择面板 -->
+  <view class="mode-picker" wx:if="{{showModePicker}}">
+    <view class="picker-mask" catchtap="showModePicker"></view>
+    <view class="picker-content">
+      <view class="picker-title">选择功能模式</view>
+      <view class="mode-group" wx:for="{{modeList}}" wx:for-item="mode" wx:key="key">
+        <view class="group-header">
+          <text class="group-icon">{{mode.icon}}</text>
+          <text class="group-name">{{mode.name}}</text>
+        </view>
+        <view class="sub-mode-list">
+          <view class="sub-mode-item" 
+                wx:for="{{mode.subModes}}" wx:for-item="sub" wx:key="key"
+                data-main-key="{{mode.key}}" data-sub-key="{{sub.key}}"
+                catchtap="onSelectMode">
+            <text class="sub-name">{{sub.name}}</text>
+            <text class="sub-check" wx:if="{{mainMode === mode.key && subMode === sub.key}}">✓</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 消息列表 -->
+  <scroll-view class="message-list" scroll-y scroll-with-animation
+    scroll-into-view="{{scrollIntoView}}"
+    upper-threshold="100">
+    <view class="message-container">
+      <view class="message-item {{msg.role}}" 
+            wx:for="{{messages}}" wx:for-item="msg" wx:key="id"
+            id="msg-{{msg.id}}">
+        <view class="msg-content">
+          <text class="msg-role-tag" wx:if="{{msg.role === 'assistant'}}">AI</text>
+          <rich-text class="msg-text" nodes="{{md.parseMarkdown(msg.content)}}" wx:if="{{msg.content}}"></rich-text>
+        </view>
+        <view class="msg-actions" wx:if="{{msg.role === 'assistant'}}">
+          <text class="action-copy" data-content="{{msg.content}}" catchtap="onCopyMsg">复制</text>
+        </view>
+      </view>
+
+      <!-- AI 思考中 -->
+      <view class="message-item assistant" wx:if="{{isThinking}}">
+        <view class="msg-content">
+          <text class="msg-role-tag">AI</text>
+          <view class="thinking-animation">
+            <text>思考中</text>
+            <view class="loading-dots">
+              <text></text><text></text><text></text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 输入区域 -->
+  <view class="input-area">
+    <view class="input-wrapper">
+      <textarea class="text-input" 
+        placeholder="{{modeInfo.placeholder || '输入你的问题...'}}"
+        value="{{inputText}}"
+        bindinput="onInput"
+        maxlength="5000"
+        auto-height
+        disable-default-padding/>
+    </view>
+    <view class="send-btn {{inputText.trim() ? 'active' : ''}}" catchtap="onSend">
+      <text class="send-icon">➤</text>
+    </view>
+  </view>
+
+  <!-- 免责声明弹窗 -->
+  <view class="disclaimer-mask" wx:if="{{showDisclaimer}}">
+    <view class="disclaimer-modal">
+      <text class="disclaimer-title">⚠️ 使用须知</text>
+      <view class="disclaimer-body">
+        <text>本小程序 AI 生成内容仅供参考，不构成专业建议。</text>
+        <text>请勿将 AI 回复直接作为学术成果提交。</text>
+        <text>涉及个人隐私的信息请谨慎输入。</text>
+      </view>
+      <view class="disclaimer-btn" catchtap="onAgreeDisclaimer">
+        <text>我已知晓，开始使用</text>
+      </view>
+    </view>
+  </view>
+</view>

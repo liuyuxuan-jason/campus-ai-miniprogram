@@ -1,0 +1,63 @@
+// utils/helpers.wxs - 辅助函数模块
+
+// 获取模式图标
+function getModeIcon(mainMode) {
+  var icons = {
+    writing: '📝',
+    learning: '📚',
+    creative: '🎨',
+    chat: '💬'
+  };
+  return icons[mainMode] || '🤖';
+}
+
+// 格式化时间
+function formatTime(timestamp) {
+  if (!timestamp) return '';
+  
+  // 如果是 Date 对象
+  if (typeof timestamp === 'object') {
+    timestamp = timestamp.getTime();
+  }
+  
+  var date = getDate(timestamp);
+  var now = getDate();
+  
+  var year = date.getFullYear();
+  var month = (date.getMonth() + 1).toString().padStart(2, '0');
+  var day = date.getDate().toString().padStart(2, '0');
+  var hour = date.getHours().toString().padStart(2, '0');
+  var min = date.getMinutes().toString().padStart(2, '0');
+  
+  // 今天
+  if (date.toDateString() === now.toDateString()) {
+    return hour + ':' + min;
+  }
+  
+  // 昨天
+  var yesterday = getDate(now.getTime() - 86400000);
+  if (date.toDateString() === yesterday.toDateString()) {
+    return '昨天 ' + hour + ':' + min;
+  }
+  
+  // 今年内
+  if (year === now.getFullYear()) {
+    return month + '-' + day + ' ' + hour + ':' + min;
+  }
+  
+  // 更早
+  return year + '-' + month + '-' + day;
+}
+
+// 截断长文本
+function truncate(text, len) {
+  if (!text) return '';
+  if (text.length <= len) return text;
+  return text.substring(0, len) + '...';
+}
+
+module.exports = {
+  getModeIcon: getModeIcon,
+  formatTime: formatTime,
+  truncate: truncate
+};

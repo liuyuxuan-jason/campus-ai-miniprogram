@@ -1,0 +1,48 @@
+<!-- pages/history/history.wxml -->
+<wxs module="h" src="../../utils/helpers.wxs"></wxs>
+<view class="page-history">
+  <!-- 筛选栏 -->
+  <scroll-view class="filter-bar" scroll-x show-scrollbar="false">
+    <view class="filter-item {{currentFilter === item.key ? 'active' : ''}}"
+          wx:for="{{filters}}" wx:key="key"
+          data-key="{{item.key}}"
+          catchtap="onFilter">
+      <text>{{item.name}}</text>
+    </view>
+  </scroll-view>
+
+  <!-- 历史列表 -->
+  <view class="history-list" wx:if="{{historyList.length > 0}}">
+    <view class="history-item" 
+          wx:for="{{historyList}}" wx:key="_id"
+          data-id="{{item._id}}"
+          data-mainmode="{{item.mainMode}}"
+          data-submode="{{item.subMode}}"
+          catchtap="onTapHistory">
+      <view class="item-header">
+        <text class="item-icon">{{h.getModeIcon(item.mainMode)}}</text>
+        <text class="item-mode">{{item.modeName || item.mainMode}}</text>
+        <text class="item-time">{{h.formatTime(item.createdAt)}}</text>
+      </view>
+      <text class="item-title">{{item.title || '新对话'}}</text>
+      <view class="item-footer">
+        <text class="item-msg-count">{{item.msgCount || '0'}} 条消息</text>
+        <text class="item-delete" data-id="{{item._id}}" catchtap="onDelete">删除</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:else>
+    <text>📭</text>
+    <text>还没有对话记录</text>
+    <text class="empty-hint">去首页选择功能开始使用吧</text>
+  </view>
+
+  <!-- 加载更多 -->
+  <view class="load-more" wx:if="{{historyList.length > 0}}">
+    <text wx:if="{{isLoading}}">加载中...</text>
+    <text wx:elif="{{hasMore}}" catchtap="onLoadMore">点击加载更多</text>
+    <text wx:else>— 没有更多了 —</text>
+  </view>
+</view>

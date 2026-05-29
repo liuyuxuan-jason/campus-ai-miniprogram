@@ -1,0 +1,64 @@
+<!-- pages/index/index.wxml -->
+<view class="page-index">
+  <!-- 顶部问候 -->
+  <view class="header">
+    <view class="greeting">
+      <text class="greeting-text">{{greeting}}</text>
+      <text class="nickname">{{nickname || '同学'}} 🎓</text>
+    </view>
+    <view class="subtitle">你的校园 AI 随身助手</view>
+  </view>
+
+  <!-- 功能模块列表 -->
+  <view class="module-section">
+    <view class="section-title">选择服务</view>
+    <view class="module-grid">
+      <view class="module-card" 
+            wx:for="{{modeList}}" 
+            wx:for-item="mode" 
+            wx:key="key"
+            data-main-key="{{mode.key}}"
+            data-sub-key="{{mode.subModes[0].key}}"
+            catchtap="onModeTap">
+        <view class="module-icon" style="background: {{mode.color}}20;">
+          <text class="icon-emoji">{{mode.icon}}</text>
+        </view>
+        <text class="module-name">{{mode.name}}</text>
+        <view class="module-subs">
+          <text class="sub-item" wx:for="{{mode.subModes}}" wx:for-item="sub" wx:key="key">{{sub.name}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 快捷入口 -->
+  <view class="quick-section">
+    <view class="section-title">常用功能</view>
+    <scroll-view class="quick-scroll" scroll-x>
+      <view class="quick-item" 
+            data-main-key="writing" data-sub-key="paperPolish"
+            catchtap="onModeTap">
+        <text class="quick-icon">📝</text>
+        <text class="quick-name">论文润色</text>
+      </view>
+      <view class="quick-item"
+            data-main-key="learning" data-sub-key="knowledgeQA"
+            catchtap="onModeTap">
+        <text class="quick-icon">📚</text>
+        <text class="quick-name">知识点答疑</text>
+      </view>
+      <view class="quick-item"
+            data-main-key="creative" data-sub-key="pptOutline"
+            catchtap="onModeTap">
+        <text class="quick-icon">🎨</text>
+        <text class="quick-name">PPT 大纲</text>
+      </view>
+      <view class="quick-item"
+            data-main-key="chat" data-sub-key="campusQA"
+            catchtap="onModeTap">
+        <text class="quick-icon">💬</text>
+        <text class="quick-name">校园对话</text>
+      </view>
+    </scroll-view>
+  </view>
+</view>

@@ -1,0 +1,7 @@
+{
+  "desc": "校园AI服务工作室",
+  "rules": [{
+    "action": "allow",
+    "page": "*"
+  }]
+}
