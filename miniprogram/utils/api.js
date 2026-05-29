@@ -1,7 +1,7 @@
 // utils/api.js — HTTP API 调用封装（使用本地后端服务器）
 // 不再依赖微信云开发
 
-const API_BASE = 'http://172.20.10.6:3000/api';
+const API_BASE = 'https://campus-ai-backend.loca.lt/api';
 
 /**
  * 调用 AI 对话 API
